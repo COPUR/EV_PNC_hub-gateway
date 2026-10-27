@@ -1,0 +1,87 @@
+asyncapi: 2.6.0
+info:
+  title: Hubject OPCP webhook events (eMSP / MO receiver)
+  version: 1.0.1
+  description: |
+    Events the OPCP webhook service POSTs to an endpoint registered with POST /v1/webhook/endpoints.
+    Derived from OPCP 1.0.0 docs/components/06_webhook-service.md, reference/webhooks.v1.json and
+    reference/webhook.payload.v1.json (CC BY-SA 4.0, Hubject GmbH). Retrieved 2026-10-24 from opcp@de066c8.
+  license: {name: CC BY-SA 4.0, url: https://creativecommons.org/licenses/by-sa/4.0/}
+servers:
+  emsp-webhook:
+    url: hooks.example.invalid/hubject-opcp
+    protocol: https
+    description: Placeholder; the real URL is registered with the webhooks API.
+channels:
+  root-events:
+    description: root.cert.added, root.cert.expired, root.cert.revoked
+    publish:
+      operationId: onRootEvent
+      message: {$ref: '#/components/messages/RootEvent'}
+  pcid-emaid-events:
+    description: mo.prov.cert.*, mo.contract.*, oem.contract.*
+    publish:
+      operationId: onPcidEmaidEvent
+      message: {$ref: '#/components/messages/PcidEmaidEvent'}
+components:
+  messageTraits:
+    Signed:
+      headers:
+        type: object
+        description: |
+          HMAC-SHA256 of the raw body, key = endpoint secret, value "sha256=<hex>".
+          Header name conflicts across sources: X-Hubject-Signature (payload example, payload spec),
+          X-Operator-Signature (prose and sample code), payload-signature (payload spec, required).
+          Verify whichever is present, constant-time compare. Retries: 3 at 1 h interval on 5xx.
+        properties:
+          X-Hubject-Signature: {type: string, pattern: '^sha256=[0-9a-fA-F]+$'}
+          X-Operator-Signature: {type: string}
+          payload-signature: {type: string}
+  messages:
+    RootEvent:
+      name: RootEvent
+      contentType: application/json
+      traits: [{$ref: '#/components/messageTraits/Signed'}]
+      payload:
+        type: object
+        required: [timestamp, eventId, eventType, payload]
+        properties:
+          timestamp: {type: string, format: date-time}
+          eventId: {type: string, format: uuid}
+          eventType: {type: string, enum: [root.cert.added, root.cert.expired, root.cert.revoked]}
+          xsdMsgDefNamespace: {type: string, enum: ['urn:iso:15118:2:2013:MsgDef', 'urn:iso:15118:20:2022:MsgDef']}
+          payload:
+            type: object
+            required: [rootCertificateId, distinguishedName, commonName, rootType]
+            properties:
+              rootCertificateId: {type: string, format: uuid}
+              distinguishedName: {type: string}
+              commonName: {type: string}
+              rootType: {type: string, enum: [MO, OEM, V2G]}
+              rootSerialNumber: {type: string}
+              signatureAlgorithm: {type: string, enum: [secp256r1, secp521r1]}
+              fingerprintSHA256: {type: string}
+    PcidEmaidEvent:
+      name: PcidEmaidEvent
+      contentType: application/json
+      traits: [{$ref: '#/components/messageTraits/Signed'}]
+      payload:
+        type: object
+        required: [timestamp, eventId, eventType, xsdMsgDefNamespace, payload]
+        properties:
+          timestamp: {type: string, format: date-time}
+          eventId: {type: string, format: uuid}
+          eventType:
+            type: string
+            enum: [mo.prov.cert.updated, mo.prov.cert.deleted, mo.prov.cert.factory.reset, mo.contract.delivered.to.oem, mo.contract.created.sent.to.oem, mo.contract.updated.sent.to.oem, mo.contract.deleted.sent.to.oem, mo.contract.rejected.by.oem, mo.contract.queued.to.oem, oem.contract.created, oem.contract.updated, oem.contract.deleted]
+          xsdMsgDefNamespace: {type: string, enum: ['urn:iso:15118:2:2013:MsgDef', 'urn:iso:15118:20:2022:MsgDef']}
+          payload:
+            type: object
+            required: [emaid, pcid]
+            properties:
+              emaid: {type: string}
+              pcid: {type: string}
+              contractCert: {type: string}
+              cpsSignerRootFingerprint: {type: string}
+              cpsSignerRootCommonName: {type: string}
+              signatureAlgorithm: {type: string, enum: [secp256r1, secp521r1]}

@@ -1,0 +1,70 @@
+# Overlay profile: GIREVE IOP deviations from OCPI 2.2.1 (eMSP view).
+# Not a schema. Apply on top of the OCPI 2.2.1 base when building the compatibility layer.
+# Source: https://www.gireve.com/wp-content/uploads/2026/09/Gireve_Tech_OCPI-V2.2.1_ImplementationGuide_V1.6-_en.pdf (v1.5), retrieved 2026-10-24. Summarised, not copied.
+profile: gireve-ocpi-2.2.1-emsp
+base: {protocol: OCPI, version: 2.2.1, also_published: ["2.1.1 (guide 1.2.9)"]}
+hub:
+  country_code: FR
+  party_id: {pre_production: "107", production: "007"}
+transport:
+  https_required: true
+  ip_filtering: true            # partner must supply IPs in advance
+  client_certificate: gireve_issued_mandatory
+  authorization_token_encoding: base64
+  headers:
+    routing_required: [OCPI-to-country-code, OCPI-to-party-id, OCPI-from-country-code, OCPI-from-party-id]
+    routing_not_required_on: [credentials, versions]
+    tracing_required: [X-Request-ID, X-Correlation-ID]   # must be echoed on responses
+registration:
+  implemented: [Register-FromIOP, Unregister-FromIOP]
+  not_implemented: [Register-ToIOP, POST-ToIOP_credentials, credentials-update]
+  update_procedure: unregister_then_register
+  operators_created_by: gireve_manually
+  ambiguity: "Direction meaning of FromIOP/ToIOP not defined in the guide (open question Q-GIREVE-01)"
+modules:
+  supported: [credentials, locations, tokens, commands, sessions, cdrs, tariffs]
+  not_supported: [chargingprofiles]
+  contradictory: {hubclientinfo: "table says not implemented; sections list use cases"}
+tokens:
+  cpo_download_of_emsp_tokens: false
+  authorize: {endpoint: "POST tokens/{uid}/authorize", location_reference_required: true, evse_may_be_picked_by_hub: true}
+  emsp_must_push_full_list_for: ["OCPI 2.1.1 CPOs"]
+  not_implemented: [PATCH-token-to-IOP, pull-tokens-from-IOP]
+  rfid_uid: {format: uppercase_hex, bytes: [4, 7], preferred: 7, zero_padded: true}
+commands:
+  supported_cpo_side: [START_SESSION, STOP_SESSION]
+  not_supported: [RESERVE_NOW, CANCEL_RESERVATION, UNLOCK_CONNECTOR]
+  start_session: {evse_uid: required, connector_id: optional}
+sessions:
+  patch_on_iop: false
+  smart_charging: false
+  charging_preferences: false
+  emsp_pull: false
+  meter_update_min_interval_seconds: 120
+  ids: gireve_generated
+cdrs:
+  credit_cdrs: false
+  fields_not_implemented: [credit, credit_reference_id, home_charging_compensation]
+  remark_prefix: {"[*]": gireve_priced, "[?]": price_not_significant, none: cpo_priced}
+  emsp_pull: unclear   # section 4.1 lists it, section 4.7.5 says not implemented
+tariffs:
+  immutable_except: [text, end_date]
+  forwarded_to_emsp: ["B2B Regular"]
+  stored_not_forwarded: [FAST, CHEAP, GREEN, AD_HOC]
+  per_emsp_pricing_fields: [target_operator_country_code, target_operator_party_id]
+  extra_dimension: SESSION_TIME
+  pull_limits: {max_per_page: 100, max_date_range: "1 month"}
+locations:
+  extra_required: [owner.name, operator.name, connectors.tariff_ids, evses.capabilities]
+  static_data_delay: hours       # quality process
+  plug_and_charge_capabilities: [ISO_15118_2_PLUG_AND_CHARGE, ISO_15118_20_PLUG_AND_CHARGE]
+  extension_fields: [gireve_id]
+  not_delivered_to_emsp: [publish_allowed_to, exceptional_openings, charging_when_closed, images, energy_mix]
+reliability:
+  store_and_forward: [sessions, cdrs]
+  backoff_example_minutes: [5, 10, 20]
+  no_bursts: true
+  http_wait_codes: [425, 429]
+vat:
+  computed_by_hub: false
+confidence: fact   # all entries from the cited guide; ambiguities listed above

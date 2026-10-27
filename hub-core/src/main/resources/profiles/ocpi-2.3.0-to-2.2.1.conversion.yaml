@@ -1,0 +1,40 @@
+# Conversion table: canonical OCPI 2.3.0 (baseline) <-> OCPI 2.2.1 as spoken to GIREVE.
+# Generated from a table diff of https://github.com/ocpi/ocpi (branch release-2.2.1-bugfixes) vs COPUR/ocpi (tag v2.3.0),
+# then reviewed. GIREVE deviations from https://www.gireve.com/wp-content/uploads/2026/09/Gireve_Tech_OCPI-V2.2.1_ImplementationGuide_V1.6-_en.pdf (S1).
+# Retrieved 2026-10-24. Directions: out = eMSP -> IOP, in = IOP -> eMSP.
+# actions: drop | rename | map | default | accept_extension | block | widen_canonical
+conversion: ocpi-2.3.0-to-2.2.1-gireve
+generated_by: ocpi_diff.py (55->61 objects, 33->37 enums)
+rules:
+  - {object: VersionNumber, change: "2.3.0 added", out: {action: map, to: "2.2.1"}, source: "S14 version_information_endpoint", confidence: fact}
+  - {object: Credentials, field: hub_party_id, change: "added in 2.3.0", out: {action: drop}, in: {action: default, value: "from config: FR107 (pre-prod) / FR007 (prod)"}, source: "S14 credentials; S1 §2.1.6", confidence: fact}
+  - {object: Role, value: HUB, change: "removed in 2.3.0", in: {action: accept_extension, note: "2.2.1 hub credentials may carry role HUB"}, source: "S13 types Role enum", confidence: fact}
+  - {object: Price, fields: {"2.3.0": [before_taxes, "taxes[TaxAmount]"], "2.2.1": [excl_vat, "incl_vat?"]}, used_in: ["Session.total_cost", "CDR.total_cost", "CDR.total_fixed_cost", "CDR.total_energy_cost", "CDR.total_time_cost", "CDR.total_parking_cost", "CDR.total_reservation_cost"], in: {action: map, mapping: {before_taxes: excl_vat, taxes: "if incl_vat present: [{name: VAT, amount: incl_vat - excl_vat}] else []"}}, source: "S13/S14 types Price", confidence: "fact (shapes), inference (VAT mapping)"}
+  - {object: Tariff, field: min_price/max_price, change: "Price -> PriceLimit{before_taxes, after_taxes?}", in: {action: map, mapping: {before_taxes: excl_vat, after_taxes: incl_vat}}, source: "S14 mod_tariffs", confidence: fact}
+  - {object: Tariff, field: tax_included, change: "required in 2.3.0 (YES/NO/N/A)", in: {action: default, value: UNKNOWN, interim: "N/A", note: "canonical model needs an UNKNOWN state; until ocpi-model adds it the hub-gateway emits N/A and flags the tariff as defaulted (side data tax_included=defaulted); 2.2.1 PriceComponent.vat omitted = no VAT applicable; GIREVE passes VAT through"}, source: "S14 mod_tariffs TaxIncluded; S13 PriceComponent.vat; S1 §4.6.2", confidence: "fact (fields), inference (default)"}
+  - {object: Tariff, field: type, note: "only REGULAR ('B2B Regular') arrives; AD_HOC_PAYMENT, PROFILE_* never forwarded", in: {action: accept_extension}, source: "S1 §2.3.2, §4.8.3", confidence: fact}
+  - {object: TariffDimensionType, value: SESSION_TIME, change: "GIREVE extension", in: {action: accept_extension}, source: "S1 §4.8.7", confidence: fact}
+  - {object: Location, field: help_phone, change: "added in 2.3.0", in: {action: default, value: null}, source: S14, confidence: fact}
+  - {object: Location, field: address, change: "string(255) in 2.2.1, string(45) in 2.3.0", in: {action: widen_canonical, max: 255}, source: "S13/S14 mod_locations", confidence: fact}
+  - {object: Location, field: state, change: "string(45) in 2.2.1, string(20) in 2.3.0", in: {action: widen_canonical, max: 45}, source: "S13/S14 mod_locations", confidence: fact}
+  - {object: EVSE, field: parking, change: "added (EVSEParking, Parking object, VehicleType)", in: {action: default, value: []}, source: S14, confidence: fact}
+  - {object: EVSE, field: accepted_service_providers, change: "added (AFIR/NAP)", in: {action: default, value: []}, source: S14, confidence: fact}
+  - {object: Connector, field: capabilities, change: "2.3.0 ConnectorCapability; absent from base 2.2.1 but sent by GIREVE", in: {action: accept_extension, values: [ISO_15118_2_PLUG_AND_CHARGE, ISO_15118_20_PLUG_AND_CHARGE], also_accept_at: "EVSE level (S1 §4.3.10 conflict)"}, source: "S1 §3.5.5, §4.3.7; S13", confidence: fact}
+  - {object: ConnectorType, values: [MCS, SAE_J3400], change: "added in 2.3.0", in: {action: accept_extension, note: "GIREVE encoding in 2.2.1 unknown"}, source: "S14; S1 §4.3.8", confidence: "fact (enum), unknown (encoding)"}
+  - {object: ParkingRestriction, values: [EMPLOYEES, TAXIS, TENANTS], change: "added in 2.3.0", in: {action: default}, source: S14, confidence: fact}
+  - {object: Token, field: type, value: EMAID, change: "added in 2.3.0", out: {action: map, to: OTHER, also: "uid = contract_id = eMAID"}, in: {action: map, rule: "type OTHER and uid in eMAID format -> EMAID"}, source: "S1 §4.4.4; S14 mod_tokens", confidence: fact}
+  - {object: Token, push: {method: PUT, patch: not_implemented, pull_from_iop: not_implemented}, source: "S1 §4.4.1, §4.4.2", confidence: fact}
+  - {object: CDR.SignedValue, field: plain_data, change: "string(5000) in 2.2.1, string(512) in 2.3.0", in: {action: widen_canonical, max: 5000}, source: "S13/S14 mod_cdrs", confidence: fact}
+  - {object: CDR, fields: [credit, credit_reference_id, home_charging_compensation], in: {action: default, note: "never sent by GIREVE"}, source: "S1 §4.7.4", confidence: fact}
+  - {object: Location/EVSE/Connector/Tariff, field: gireve_id, change: "GIREVE extension", in: {action: accept_extension, store_as: external_ref}, source: "S1 §4.3.5, §4.8.2", confidence: fact}
+  - {object: Session, field: id, note: "GIREVE id, not CPO id; location_id/evse_uid/connector_id are CPO ids", source: "S1 §4.6.1", confidence: fact}
+  - {object: CDR, field: id, note: "CPO id; session_id is GIREVE id", source: "S1 §4.7.1", confidence: fact}
+  - {module: payments, change: "added in 2.3.0", out: {action: block}, source: S14, confidence: fact}
+  - {module: chargingprofiles, out: {action: block}, reason: "not implemented by GIREVE", source: "S1 §2.1.10", confidence: fact}
+  - {module: hubclientinfo, out: {action: block}, reason: "not implemented per §2.1.10 (conflicts with §4.1)", source: S1, confidence: fact}
+  - {object: Session, endpoint: charging_preferences, out: {action: block}, source: "S1 §4.6.3", confidence: fact}
+  - {object: Command, values: [RESERVE_NOW, CANCEL_RESERVATION, UNLOCK_CONNECTOR], out: {action: block}, source: "S1 §4.5.4-4.5.6", confidence: fact}
+  - {object: StartSession, field: evse_uid, out: {action: default, rule: "required (canonical optional)"}, source: "S1 §4.5.2", confidence: fact}
+not_checked:
+  - "Prose-only rule changes inside unchanged tables (diff covers tables only)"
+  - "Enum values with characters outside [A-Za-z0-9_.-] (e.g. TaxIncluded N/A was found by hand)"

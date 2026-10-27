@@ -1,0 +1,80 @@
+# Overlay profile: GIREVE Trust Platform, PNCP (eMSP view). Not a schema.
+# Sources (retrieved 2026-10-24), summarised not copied:
+#   S4 https://github.com/Gireve/pncp-implementation-guide (HEAD b951f25, 2026-09-24)
+#   S3 https://www.gireve.com/wp-content/uploads/2026/05/Gireve_Info_Cnx_PNCP-Implementation-Guide_1.2.0_en.pdf
+#   S12 https://gireve-apis.stoplight.io/docs/pncp (operation pages; JS-only, not machine-read)
+profile: gireve-pncp-1.2.0-emsp
+base: {protocol: PNCP, guide_version: "1.2.0", api_version_example: "1.0.2", style: "OCPI-like REST/JSON modules"}
+environments:
+  pre_production: {host: "pp-trust-secure-api.gireve.com", source: "S4 §2.5.1", confidence: fact}
+  production: {host: "trust-secure-api.gireve.com", source: "S4 §2.5.2", confidence: fact}
+  legacy_hosts: {hosts: ["pp-trust-api.gireve.com", "trust-api.gireve.com"], source: "S3 §2.5; S4 commit 41f9170 diff", confidence: fact, note: "pre-mTLS hosts; do not use for new integrations"}
+url_pattern: {value: "https://<env>.gireve.com/pncp/<x.y.z>/<module>", source: "S4 §2.3", confidence: fact}
+modules:
+  - {name: PNCGenericCertificate, purpose: "x509 certificates (enrol, revoke, consult)"}
+  - {name: PNCRootCACertificate, purpose: "RCP root CAs"}
+  - {name: PNCProvisioningCertificate, purpose: "PCP provisioning certificates"}
+  - {name: PNCContractCertificate, purpose: "contract certificates, CCB, SCCB, CCP"}
+transport:
+  tls: {min_version: "1.3", server_root: "GTS Root R1", source: "S4 §2.5, §2.7.1", confidence: fact}
+  mutual_tls: {required: true, client_cert_issued_by: "GIREVE onboarding (provisioned or approved)", gateway_rule: "cert lives on the component that terminates TLS", legacy_oauth_only: "temporary, existing partners only", source: "S4 §2.7.1, §2.8.1", confidence: fact}
+  ip_allow_list: {required: true, source: "S4 §2.7.2", confidence: fact}
+  waf_minified_json_only: {required: true, source: "S4 §2.7.3", confidence: fact}
+auth:
+  oauth2: {grant_inputs: [client_id, client_secret], header: "Authorization: Bearer <token>", lifetime: "a few hours", reuse_until_expiry: true, checked_in_certification: true, token_endpoint: x-unverified, source: "S4 §2.8.1", confidence: fact}
+headers:
+  required: [X-Request-ID, X-Correlation-ID, PNCP-from-country-code, PNCP-from-party-id]
+  rejection: "operator not declared, or communication partner not attached to it"
+  source: "S4 §2.4.1, §2.8.2"
+  confidence: fact
+response: {envelope: "OCPI response format (data, status_code, status_message, timestamp)", pagination: "OCPI offset/limit + Link, X-Total-Count, X-Limit", source: "S4 §2.4.2-2.4.4", confidence: fact}
+permissions: {model: "one permission per service, bound per subscription by a GIREVE admin", unpermitted_call: rejected, source: "S4 §3.2", confidence: fact}
+certificate_profiles:
+  defines: [issuer_subca2, validity, subject_dn]
+  cn_from_csr: "eMAID for MO branch"
+  dc_value_mo: "MO"
+  assigned_at: "technical connection; validated before go-live"
+  unassigned_profile: rejected
+  source: "S4 §3.3.1"
+  confidence: fact
+keys: {algorithm: "ECDSA secp256r1", csr: "PKCS#10 PEM without headers or line breaks", renewal: "new key pair required; reuse rejected", est_format: "PKCS#7", source: "S4 §3.3.2, §3.3.3", confidence: fact}
+emaid: {format: "ISO 15118-2 Annex H.1 (CC, provider ID 3 alnum, instance 9 alnum, optional separator, check digit)", must_match_registered_party: true, on_mismatch: rejected, source: "S3 §3.7.1.1.2", confidence: fact}
+iso15118: {supported: ["urn:iso:15118:2:2013:MsgDef"], iso15118_20: "in progress, not accepted", source: "S4 §3.6.3", confidence: fact}
+contract_certificate: {lifetime: "2 years", expiry_webhook_days: 50, source: "S4 §3.7.4", confidence: fact}
+operations_emsp:
+  # HTTP method and path: x-unverified (Stoplight only). Map paths in configuration.
+  - {name: "Create CC, build & sign the CCB and store in CCP", alias: build_sign_store, module: PNCContractCertificate, inputs: [emaid, pcid, "certificate_profile?", "metadata?"], recommended: true, pilot: true, source: "S4 §3.7.1"}
+  - {name: "Create a CC and build CCB", module: PNCContractCertificate, inputs: [emaid, pcid, "certificate_profile?", "metadata?"], pilot: false, source: "S4 §3.7.1.1.1"}
+  - {name: "Sign a CCB and return SCCB", module: PNCContractCertificate, inputs: [ccb, full_pc], pilot: false, source: "S4 §3.7.1.2"}
+  - {name: "Sign a CCB and store SCCB in CCP", module: PNCContractCertificate, inputs: [ccb, full_pc], pilot: false, source: "S4 §3.7.1.2"}
+  - {name: "Revoke a CC", module: PNCContractCertificate, inputs: [serial_number_decimal, issuer_dn], applies_to: "GIREVE-generated CCs only", effect: "revoke + delete SCCBs from CCP", pilot: true, source: "S4 §3.7.5.1"}
+  - {name: "Deactivate an eMAId", module: PNCContractCertificate, inputs: [emaid], effect: "remove all SCCBs for the eMAID; also revokes when GIREVE generated the CC", pilot: true, source: "S4 §3.7.5"}
+  - {name: "Act revocation of a CC in CCP", module: PNCContractCertificate, inputs: [serial_number_decimal, issuer_dn], applies_to: "own-enrolment CCs", pilot: false, source: "S4 §3.7.5.2"}
+  - {name: "Enroll a certificate (PNCP)", module: PNCGenericCertificate, inputs: [csr, certificateProfileId, "metadata?"], pilot: false, source: "S4 §3.3.2"}
+  - {name: "Enroll a certificate (EST protocol)", module: PNCGenericCertificate, pilot: false, source: "S4 §3.3.2"}
+  - {name: "Get CA certificates (EST protocol)", module: PNCGenericCertificate, pilot: false, source: "S4 §3.3.2"}
+  - {name: "Revoke a certificate", module: PNCGenericCertificate, inputs: [serial_number_decimal, issuer_dn], note: "does not remove SCCB from CCP; CRL updated every few hours up to daily", pilot: false, source: "S4 §3.3.4, §3.7.5"}
+  - {name: "Retrieve enrolled Certificates", module: PNCGenericCertificate, paginated: true, pilot: true, source: "S4 §3.3.5"}
+  - {name: "Export enrolled Certificates CSV", module: PNCGenericCertificate, pilot: false, source: "S4 §3.3.5"}
+  - {name: "Get PC by PCID", module: PNCProvisioningCertificate, returns: "active PC + chain; most recent if several", pilot: false, source: "S4 §3.7.7"}
+  - {name: "Check a PCID in PCP", module: PNCProvisioningCertificate, returns: "confirmation or error", pilot: true, source: "S4 §3.7.8"}
+  - {name: "Get RootCA certificates", module: PNCRootCACertificate, paginated: true, pilot: false, source: "S4 §3.4.2"}
+  - {name: "Create a webhook", pilot: true, source: "S4 §3.5.2"}
+  - {name: "Get all webhooks", pilot: true, source: "S4 §3.5.2"}
+  - {name: "Get a webhook", pilot: false, source: "S4 §3.5.2"}
+  - {name: "Update a webhook", pilot: true, source: "S4 §3.5.2"}
+  - {name: "Delete a webhook", pilot: false, source: "S4 §3.5.2"}
+webhooks:
+  transport: "HTTPS POST from one fixed GIREVE IP (given at PPROD and PROD onboarding)"
+  signature: {header: payload-signature, algorithm: HMAC-SHA256, encoding: base64, secret: "per webhook; set by operator or assigned by GIREVE"}
+  events_emsp: [root.certificate.available, root.certificate.expired, root.certificate.revoked, emsp.provisionning.certificate.removed, emsp.provisionning.certificate.revoked, emsp.provisionning.certificate.updated, emsp.contract.certficate.delivered, emsp.contract.certificate.delivered, emsp.contract.certificate.expiring.soon]
+  spelling_note: "table §3.5.3 spells 'certficate'; §3.7.10 spells 'certificate'; accept both"
+  payload_field_names: x-unverified
+  source: "S4 §3.5"
+  confidence: fact
+unknowns:
+  - "HTTP methods, paths, request/response schemas of every operation (ask GIREVE for the Stoplight OpenAPI export)"
+  - "OAuth2 token endpoint URL and grant type"
+  - "PNCP status_code catalogue (only 2018 seen, CPO side)"
+  - "Whether an eMSP using Build Sign Store must also put a root in the RCP (§3.7.6 ambiguity)"
+  - "Rate limits; pre-production test PCIDs and OEM test roots"

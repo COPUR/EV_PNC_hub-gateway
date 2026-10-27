@@ -1,0 +1,42 @@
+# Overlay profile: Hubject HBS deviations and additions to the pinned OICP 2.3 EMP contract.
+# Derived from OICP 2.3 / OICP23_Integration_Guide (CC BY-SA 4.0, Hubject GmbH) and support.hubject.com (summarised).
+base: {protocol: OICP, version: "2.3", role: EMP, contract: ../_sources/hubject-oicp-2.3-emp.openapi.yaml}
+x-retrieved: "2026-10-24"
+x-licence: CC BY-SA 4.0
+paths_extra:
+  - path: /charging/v21/providers/{providerID}/authorize-remote/stop
+    note: "Pinned contract names the path parameter externalID; the leading document fills it with the ProviderID."
+    source: "OICP23_Integration_Guide@68e8710:03_Services/Services Implementation for EMPs/05-eRoamingAuthorizeRemoteStop.md:35-40"
+    confidence: fact
+  - path: /evsepull/v21/providers/{providerID}/status-records-by-operator-id
+    method: POST
+    body: {OperatorID: "array of OperatorID", ProviderID: ProviderID}
+    note: "Returns status only for CPOs the EMP subscribes to. Missing from the pinned OpenAPI."
+    source: "OICP23_Integration_Guide@68e8710:03_Services/Services Implementation for EMPs/03-PullEvseStatus by OperatorID.md:7-29"
+    confidence: fact
+query_params:
+  - operations: [eRoamingPullEvseData_V2.3, eRoamingGetChargeDetailRecords_V2.2]
+    params: {page: {type: integer, default: 0}, size: {type: integer, default: 20, maximum: 2000}}
+    source: "oicp-emp-2.3-api-doc@9a773b3:src/resources/eRoamingData/eRoamingPullEvseData_V2.3.yaml:22-29; oicp@119c5d5:OICP-2.3/OICP 2.3 EMP/02_EMP_Services_and_Operations.asciidoc:333-347"
+    confidence: fact
+timeouts:
+  authorize_start_response_s: {value: 10, source: "support.hubject.com/hc/en-us/articles/4403421095953", confidence: fact}
+  cpo_remote_start_window_s: {value: 40, source: "support.hubject.com/hc/en-us/articles/4403421095953", confidence: fact}
+  cpo_remote_stop_window_s: {value: 60, source: "OICP23_Integration_Guide@68e8710:…/05-eRoamingAuthorizeRemoteStop.md:14-16", confidence: fact}
+rate_limits_per_minute:
+  source: "oicp@119c5d5:Hubject Acceptable Use Policy v1-0.asciidoc:156-217"
+  confidence: fact
+  values: {PullEVSEData: 100, PullEVSEStatus: 6, PullEVSEStatusByOperatorID: 75, PullEVSEStatusByID: 300, AuthorizeRemoteStart: 100, AuthorizeRemoteStop: 200, GetChargeDetailRecords: 200, PullEVSEPricing: 280, PullPricingProductData: 300, ChargingNotifications: 100}
+  conflict: {PullEVSEData: 25, source: "support.hubject.com/hc/en-us/articles/4403421095953", resolution: "throttle to 25 until Hubject confirms"}
+  on_429: "exponential backoff with jitter"
+quirks:
+  - {id: cdr-not-resent, text: "A CDR that fails delivery is not resent; recover with GetChargeDetailRecords (CDRForwarded=false).", source: "support.hubject.com/hc/en-us/articles/4403421095953; Realease_Notes.asciidoc:65-79", confidence: fact}
+  - {id: one-cdr-per-session, text: "HBS accepts one CDR per SessionID.", source: "02_EMP_Services_and_Operations.asciidoc:281", confidence: fact}
+  - {id: remote-start-no-sessionid, text: "EMP should not fill SessionID in the initial remote start; Hubject assigns it.", source: "02_EMP_Services_and_Operations.asciidoc:224", confidence: fact}
+  - {id: portal-flags, text: "Online Requests and Broadcast Requests are off by default and must be enabled per service type.", source: "support.hubject.com/hc/en-us/articles/4403420365585", confidence: fact}
+  - {id: version-declaration, text: "Partners MUST declare the OICP version they run; each OICP version supported two years.", source: "oicp-emp-2.3-api-doc@9a773b3:src/info.yaml:51,63", confidence: fact}
+network:
+  hubject_source_ips: {qa: [18.195.149.69, 18.195.61.108], prod: [18.194.114.107, 35.157.60.250], source: "support.hubject.com/hc/en-us/articles/11906803615773", confidence: fact}
+  our_egress_ips: {rule: "static, allowlisted by Hubject", source: "OICP23_Integration_Guide@68e8710:01_Overview/02-Getting Started/04-Pre-requisites.md:8-10", confidence: fact}
+unsupported:
+  - {item: "OCPI for EMP roaming", confidence: unknown, note: "Only OCPI 2.2.1 CDR upload to Financial Services (CPO side) is documented."}
