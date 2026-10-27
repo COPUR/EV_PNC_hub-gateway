@@ -1,0 +1,152 @@
+[
+  {
+    "country_code": "FR",
+    "party_id": "ABC",
+    "id": "LOC0001",
+    "publish": true,
+    "name": "Mock station 1",
+    "address": "1 rue de l'Exemple",
+    "city": "Lyon",
+    "postal_code": "69001",
+    "country": "FRA",
+    "coordinates": {
+      "latitude": "45.760000",
+      "longitude": "4.840000"
+    },
+    "owner": {
+      "name": "Mock Owner SAS"
+    },
+    "operator": {
+      "name": "Mock Operator SAS"
+    },
+    "time_zone": "Europe/Paris",
+    "evses": [
+      {
+        "uid": "FR*ABC*E10001",
+        "evse_id": "FR*ABC*E10001",
+        "status": "AVAILABLE",
+        "capabilities": [
+          "ISO_15118_2_PLUG_AND_CHARGE",
+          "RFID_READER"
+        ],
+        "connectors": [
+          {
+            "id": "1",
+            "standard": "IEC_62196_T2_COMBO",
+            "format": "CABLE",
+            "power_type": "DC",
+            "max_voltage": 400,
+            "max_amperage": 125,
+            "tariff_ids": [
+              "TAR001"
+            ],
+            "last_updated": "2026-10-21T08:00:00Z"
+          }
+        ],
+        "last_updated": "2026-10-21T08:00:00Z"
+      }
+    ],
+    "gireve_id": "gir-1",
+    "last_updated": "2026-10-21T08:00:00Z"
+  },
+  {
+    "country_code": "FR",
+    "party_id": "ABC",
+    "id": "LOC0002",
+    "publish": true,
+    "name": "Mock station 2",
+    "address": "2 rue de l'Exemple",
+    "city": "Lyon",
+    "postal_code": "69001",
+    "country": "FRA",
+    "coordinates": {
+      "latitude": "45.760000",
+      "longitude": "4.840000"
+    },
+    "owner": {
+      "name": "Mock Owner SAS"
+    },
+    "operator": {
+      "name": "Mock Operator SAS"
+    },
+    "time_zone": "Europe/Paris",
+    "evses": [
+      {
+        "uid": "FR*ABC*E20001",
+        "evse_id": "FR*ABC*E20001",
+        "status": "AVAILABLE",
+        "capabilities": [
+          "ISO_15118_2_PLUG_AND_CHARGE",
+          "RFID_READER"
+        ],
+        "connectors": [
+          {
+            "id": "1",
+            "standard": "IEC_62196_T2_COMBO",
+            "format": "CABLE",
+            "power_type": "DC",
+            "max_voltage": 400,
+            "max_amperage": 125,
+            "tariff_ids": [
+              "TAR002"
+            ],
+            "last_updated": "2026-10-22T08:00:00Z"
+          }
+        ],
+        "last_updated": "2026-10-22T08:00:00Z"
+      }
+    ],
+    "gireve_id": "gir-2",
+    "last_updated": "2026-10-22T08:00:00Z"
+  },
+  {
+    "country_code": "FR",
+    "party_id": "ABC",
+    "id": "LOC0003",
+    "publish": true,
+    "name": "Mock station 3",
+    "address": "3 rue de l'Exemple",
+    "city": "Lyon",
+    "postal_code": "69001",
+    "country": "FRA",
+    "coordinates": {
+      "latitude": "45.760000",
+      "longitude": "4.840000"
+    },
+    "owner": {
+      "name": "Mock Owner SAS"
+    },
+    "operator": {
+      "name": "Mock Operator SAS"
+    },
+    "time_zone": "Europe/Paris",
+    "evses": [
+      {
+        "uid": "FR*ABC*E30001",
+        "evse_id": "FR*ABC*E30001",
+        "status": "AVAILABLE",
+        "capabilities": [
+          "ISO_15118_2_PLUG_AND_CHARGE",
+          "RFID_READER"
+        ],
+        "connectors": [
+          {
+            "id": "1",
+            "standard": "IEC_62196_T2_COMBO",
+            "format": "CABLE",
+            "power_type": "DC",
+            "max_voltage": 400,
+            "max_amperage": 125,
+            "tariff_ids": [
+              "TAR003"
+            ],
+            "last_updated": "2026-10-23T08:00:00Z"
+          }
+        ],
+        "last_updated": "2026-10-23T08:00:00Z"
+      }
+    ],
+    "gireve_id": "gir-3",
+    "last_updated": "2026-10-23T08:00:00Z"
+  }
+]

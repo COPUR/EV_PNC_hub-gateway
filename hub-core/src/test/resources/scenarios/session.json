@@ -1,0 +1,21 @@
+{
+  "country_code": "FR",
+  "party_id": "ABC",
+  "id": "SES0001",
+  "start_date_time": "2026-10-27T09:00:00Z",
+  "kwh": 12.5,
+  "cdr_token": {
+    "country_code": "TR",
+    "party_id": "TST",
+    "uid": "04A1B2C3D4E5F6",
+    "type": "RFID",
+    "contract_id": "TR-TST-C00000001-1"
+  },
+  "auth_method": "WHITELIST",
+  "location_id": "LOC0001",
+  "evse_uid": "FR*ABC*E10001",
+  "connector_id": "1",
+  "currency": "EUR",
+  "status": "ACTIVE",
+  "last_updated": "2026-10-27T10:00:00Z"
+}
