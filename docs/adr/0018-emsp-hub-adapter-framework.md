@@ -1,12 +1,12 @@
 # ADR-0018: eMSP hub adapter framework (Hubject and GIREVE as future integration points)
 
-**Status:** proposed · **Date:** 2026-10-27 · **Revision:** 0.1 · Accepted by the product owner on the Kanban card for this ADR.
+**Status:** proposed · **Date:** 2026-10-27 · **Revision:** 0.2 (ported from Kotlin to Java, see "Decisions inside the decision") · Accepted by the product owner on the Kanban card for this ADR.
 
 ## Context
 
 On 2026-10-27 the product owner decided that the first emails to Hubject and GIREVE (TR-13, TR-14) are not sent. The hubs stay on the roadmap as integration points for the Europe expansion, so the platform needs a framework in which a hub is an adapter that can be built, tested and kept current without a contract, an account or any contact with the hub. "Reverse engineer" is read narrowly: derive protocols, flows and contracts from published specifications, public SDKs and public implementation guides. No live hub system is probed, scraped or called.
 
-Already decided and kept: ADR-0001 (translate at the edge into one canonical OCPI 2.3.0-shaped model, hub rules as data), ADR-0002 (Hubject as an online EMP), ADR-0003 (one Plug&Charge port, two ecosystem adapters), ADR-0004 (ECHX is OCPI only, phase 5), ADR-0005 (asymmetric parallel hubs), ADR-0006 (guest pricing), the Kafka backend stack ADR-0008 to ADR-0015 (Kotlin, Spring Boot, JDK 25), and the research in `EV_PNC_hub-contracts` (pinned OICP 2.3 and OPCP files, profiles, 122 requirements).
+Already decided and kept: ADR-0001 (translate at the edge into one canonical OCPI 2.3.0-shaped model, hub rules as data), ADR-0002 (Hubject as an online EMP), ADR-0003 (one Plug&Charge port, two ecosystem adapters), ADR-0004 (ECHX is OCPI only, phase 5), ADR-0005 (asymmetric parallel hubs), ADR-0006 (guest pricing), the Kafka backend stack ADR-0008 to ADR-0015 (Java and Go, Spring Boot 4.x, Java 25; revision 0.3 of ADR-0012), and the research in `EV_PNC_hub-contracts` (pinned OICP 2.3 and OPCP files, profiles, 122 requirements).
 
 Hubject speaks OICP 2.3 (not OCPI) and Plug&Charge over OPCP 1.0.0. GIREVE speaks OCPI 2.2.1 with its own deviations and Plug&Charge over PNCP 1.2.0. The platform core speaks OCPI 2.3.0.
 
@@ -24,7 +24,7 @@ Hubject speaks OICP 2.3 (not OCPI) and Plug&Charge over OPCP 1.0.0. GIREVE speak
 7. **Answer first, never lose a CDR.** CDR intake acknowledges positively as soon as the record is stored or parked, deduplicates by (hub, session id) and replays parked records. Hubject never resends a failed CDR.
 8. **Characterization before change.** The pinned vendor contract is the legacy surface we cannot edit. Tests compare our wire model and status-code catalogue with the pinned files, and `ConversionTable.verifyCovered` fails (also at adapter start-up) when the vendored conversion table has a rule the code does not handle. A contract bump that moves anything fails in review.
 9. **Framework conformance test.** `HubAdapterContract` (test fixtures of `hub-core`) is subclassed by every adapter; a new hub joins by passing it first. See `docs/adding-a-hub.md`.
-10. **Runtime wiring is a separate step.** The modules are plain Kotlin libraries (kotlinx.serialization, SnakeYAML). The Spring Boot application, the mTLS `HubTransport`, persistence and Kafka publishing are cards, not part of this ADR (ADR-0014: golden-path template, not a shared library).
+10. **Runtime wiring is a separate step.** The modules are plain Java libraries (Jackson, SnakeYAML), so the Spring Boot application can depend on them directly. The Spring Boot application, the mTLS `HubTransport`, persistence and Kafka publishing are cards, not part of this ADR (ADR-0014: golden-path template, not a shared library).
 
 ## Decisions inside the decision
 
@@ -36,6 +36,7 @@ Hubject speaks OICP 2.3 (not OCPI) and Plug&Charge over OPCP 1.0.0. GIREVE speak
 | Hubject QR and remote identification token type | `APP_USER` with the EvcoID as uid and contract id | Inference; the policy engine treats them as app-held contracts. Plug&Charge maps to `EMAID`. |
 | Authorize refusal codes | table in `hubject-authorize-statuscode.mapping.yaml`, confidence inference | OICP does not say which refusal uses which code (only 102 is labelled "sent by EMP"). Q-ERR-1 is not asked now. |
 | GIREVE authorize budget | 8 s, configuration | GIREVE's wait is not published; the number is an assumption. |
+| Language | Java, not Kotlin | The product owner corrected the backend stack to Java and Go; ADR-0012 revision 0.3 (EV_PNC_docs#9) says Java 25 and Spring Boot 4.x. This PR first used Kotlin and was ported to Java before review: same design, same 139 tests (hub-core 47, hub-hubject 51, hub-gireve 41), sealed interfaces and records instead of sealed classes and data classes, Jackson instead of kotlinx.serialization. |
 | JDK | build and CI on JDK 21 | ADR-0012 asks for JDK 25. Gradle 8.14 runs on Java up to 24; moving to JDK 25 means Gradle 9.1 or later. Bytecode target is 21 and runs on 25. |
 
 ## Reading ADR-0005 and the gate now

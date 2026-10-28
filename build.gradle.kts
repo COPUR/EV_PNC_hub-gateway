@@ -1,8 +1,3 @@
-plugins {
-    kotlin("jvm") version "2.2.21" apply false
-    kotlin("plugin.serialization") version "2.2.21" apply false
-}
-
 allprojects {
     group = "com.evpnc.hub"
     version = "0.1.0"
@@ -10,17 +5,15 @@ allprojects {
 }
 
 subprojects {
-    apply(plugin = "org.jetbrains.kotlin.jvm")
+    apply(plugin = "java-library")
 
-    extensions.configure<org.gradle.api.plugins.JavaPluginExtension> {
-        sourceCompatibility = JavaVersion.VERSION_21
-        targetCompatibility = JavaVersion.VERSION_21
+    extensions.configure<JavaPluginExtension> {
+        toolchain.languageVersion.set(JavaLanguageVersion.of(21))
     }
-    extensions.configure<org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension> {
-        compilerOptions {
-            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
-            allWarningsAsErrors.set(true)
-        }
+    tasks.withType<JavaCompile> {
+        options.release.set(21)
+        options.encoding = "UTF-8"
+        options.compilerArgs.addAll(listOf("-Xlint:all", "-Werror"))
     }
     tasks.withType<Test> { useJUnitPlatform() }
 }

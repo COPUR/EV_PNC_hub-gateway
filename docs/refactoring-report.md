@@ -31,7 +31,7 @@ No dependency had to be broken in existing code; the seams were built in from th
 
 ## Characterization tests added
 
-136 Kotlin tests (hub-core 44, hub-hubject 51, hub-gireve 41) and 17 Python tests in hub-contracts.
+139 Java tests (hub-core 47, hub-hubject 51, hub-gireve 41) and 17 Python tests in hub-contracts.
 
 | Pinned behaviour | Test |
 |---|---|
@@ -76,7 +76,7 @@ All behaviour-preserving, tests green after each:
 
 ```bash
 tools/fetch-contracts.sh && tools/sync-contracts.sh --check   # vendored profiles equal the pinned contracts
-CONTRACTS_DIR=$PWD/.contracts gradle build --no-daemon        # 136 tests, warnings are errors
+CONTRACTS_DIR=$PWD/.contracts gradle build --no-daemon        # 139 tests, warnings are errors (-Xlint:all -Werror)
 uv run --with pyyaml python -m unittest discover -s tests     # in hub-contracts: 17 tests
 ```
 

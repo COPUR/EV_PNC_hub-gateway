@@ -1,6 +1,5 @@
 .gradle/
 build/
 .contracts/
-.kotlin/
 *.iml
 .idea/

@@ -36,7 +36,7 @@ make test        # fetches the pinned contracts, checks the vendored profiles, r
 make sync-check  # only the profile check
 ```
 
-Needs JDK 21 and Gradle 8.14. `contracts.lock` pins the commit of EV_PNC_hub-contracts; profiles are vendored under each module's `src/main/resources/profiles/` and CI fails when they differ from that commit.
+Java library modules (stack per ADR-0012 rev 0.3: Java and Go). Needs JDK 21 and Gradle 8.14; the move to JDK 25 needs Gradle 9.1+. `contracts.lock` pins the commit of EV_PNC_hub-contracts; profiles are vendored under each module's `src/main/resources/profiles/` and CI fails when they differ from that commit.
 
 ## Packaging
 
