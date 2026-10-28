@@ -1,0 +1,5 @@
+.gradle/
+build/
+.contracts/
+*.iml
+.idea/

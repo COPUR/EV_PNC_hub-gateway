@@ -1,0 +1,16 @@
+package com.evpnc.hub.core;
+
+public enum RemoteRejection {
+    NO_VALID_CONTRACT,
+    PARTNER_UNKNOWN,
+    PARTNER_UNREACHABLE,
+    EVSE_UNREACHABLE,
+    NO_VEHICLE_CONNECTED,
+    EVSE_RESERVED,
+    EVSE_IN_USE,
+    EVSE_UNKNOWN,
+    EVSE_NOT_ROAMABLE,
+    EVSE_OUT_OF_SERVICE,
+    CONFIGURATION,
+    OTHER
+}

@@ -1,0 +1,4 @@
+# The commit of COPUR/EV_PNC_hub-contracts that this repository's vendored profiles and its contract tests are pinned to.
+# Move it with: tools/fetch-contracts.sh --update <sha>, then review the diff of hub-*/src/main/resources/profiles/.
+repo=https://github.com/COPUR/EV_PNC_hub-contracts
+commit=7fbd02390de925f33ff716d34f968cdb70aa024d

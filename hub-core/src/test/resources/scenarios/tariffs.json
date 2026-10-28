@@ -1,0 +1,65 @@
+[
+  {
+    "country_code": "FR",
+    "party_id": "ABC",
+    "id": "TAR001",
+    "currency": "EUR",
+    "type": "REGULAR",
+    "elements": [
+      {
+        "price_components": [
+          {
+            "type": "ENERGY",
+            "price": 0.39,
+            "vat": 20.0,
+            "step_size": 1
+          }
+        ]
+      }
+    ],
+    "gireve_id": "gir-tar-1",
+    "last_updated": "2026-10-21T08:00:00Z"
+  },
+  {
+    "country_code": "FR",
+    "party_id": "ABC",
+    "id": "TAR002",
+    "currency": "EUR",
+    "type": "REGULAR",
+    "elements": [
+      {
+        "price_components": [
+          {
+            "type": "ENERGY",
+            "price": 0.39,
+            "vat": 20.0,
+            "step_size": 1
+          }
+        ]
+      }
+    ],
+    "gireve_id": "gir-tar-2",
+    "last_updated": "2026-10-22T08:00:00Z"
+  },
+  {
+    "country_code": "FR",
+    "party_id": "ABC",
+    "id": "TAR003",
+    "currency": "EUR",
+    "type": "REGULAR",
+    "elements": [
+      {
+        "price_components": [
+          {
+            "type": "ENERGY",
+            "price": 0.39,
+            "vat": 20.0,
+            "step_size": 1
+          }
+        ]
+      }
+    ],
+    "gireve_id": "gir-tar-3",
+    "last_updated": "2026-10-23T08:00:00Z"
+  }
+]

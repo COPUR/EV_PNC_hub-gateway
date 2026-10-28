@@ -1,0 +1,80 @@
+asyncapi: 2.6.0
+info:
+  title: GIREVE Trust Platform (PNCP) webhooks, eMSP view
+  version: 1.2.0
+  description: >
+    Webhook events GIREVE POSTs to an eMSP endpoint. Event names and the signature scheme are from
+    https://github.com/Gireve/pncp-implementation-guide docs/03-functional-guidelines.md §3.5 (retrieved 2026-10-24).
+    Payload schemas are only partly known (x-unverified); the authoritative schema is on GIREVE's Stoplight site.
+    Fills the contract referenced by RH-GIREVE-PNC-006 (contracts/gireve-pncp-events.asyncapi.yaml), which was missing from specs/gireve/contracts/.
+servers:
+  emsp-webhook:
+    url: '{webhookUrl}'
+    protocol: https
+    description: Our endpoint; accept only GIREVE's fixed outgoing IP (given at onboarding).
+    variables:
+      webhookUrl:
+        default: https://emsp.example/pncp/webhooks
+channels:
+  webhook:
+    subscribe:
+      operationId: receivePncpEvent
+      message:
+        oneOf:
+          - $ref: '#/components/messages/RootCertificateEvent'
+          - $ref: '#/components/messages/EmspSccbEvent'
+components:
+  messageTraits:
+    signed:
+      headers:
+        type: object
+        required: [payload-signature]
+        properties:
+          payload-signature:
+            type: string
+            description: Base64 HMAC-SHA256 of the raw payload computed with the webhook secret (§3.5.4).
+  messages:
+    RootCertificateEvent:
+      name: RootCertificateEvent
+      traits:
+        - $ref: '#/components/messageTraits/signed'
+      payload:
+        type: object
+        x-unverified: field names printed without underscores in the GitHub text (serialid, subjectdn, eventtype, iso15118version); confirm on Stoplight
+        properties:
+          timestamp:
+            type: string
+            format: date-time
+          eventtype:
+            type: string
+            enum: [root.certificate.available, root.certificate.expired, root.certificate.revoked]
+          iso15118version:
+            type: string
+            enum: ['urn:iso:15118:2:2013:MsgDef']
+          data:
+            type: object
+            properties:
+              type:
+                type: string
+                description: e.g. V2G
+              serialid:
+                type: string
+              subjectdn:
+                type: string
+    EmspSccbEvent:
+      name: EmspSccbEvent
+      traits:
+        - $ref: '#/components/messageTraits/signed'
+      payload:
+        type: object
+        x-unverified: payload schema not public in readable form; only event names are known
+        properties:
+          eventtype:
+            type: string
+            enum:
+              - emsp.provisionning.certificate.removed
+              - emsp.provisionning.certificate.revoked
+              - emsp.provisionning.certificate.updated
+              - emsp.contract.certficate.delivered
+              - emsp.contract.certificate.delivered
+              - emsp.contract.certificate.expiring.soon

@@ -1,0 +1,24 @@
+# Mapping: platform authorize decision -> OICP 2.3 StatusCode, for the eRoamingAuthorizeStart answer.
+# OICP says which codes exist, not which refusal uses which (only 102 is labelled "sent by EMP"). Every entry here is a
+# reasoned choice, not a Hubject statement. Q-ERR-1 asked Hubject; it is not asked now (TR-13 dropped, 2026-10-27), so the
+# table stays inference until the Hubject QA protocol or support says otherwise. Change it here, not in code.
+mapping_version: "0.1"
+confidence: inference
+source: "OICP 2.3 StatusCode.yaml descriptions (oicp-emp-2.3-api-doc@9a773b3:src/schemas/StatusCode.yaml); RH-HUBJECT-ERR-001, ERR-004"
+allowed: "000"
+# Reason -> code. A map keyed by channel applies per identification type; a plain string applies to all.
+by_reason:
+  TOKEN_UNKNOWN: {RFID: "102", QR_CODE: "101", PLUG_AND_CHARGE: "105", REMOTE: "105", TOKEN_AUTHORIZE: "102"}
+  TOKEN_INVALID: {RFID: "103", QR_CODE: "101", PLUG_AND_CHARGE: "121", REMOTE: "105", TOKEN_AUTHORIZE: "102"}
+  NO_GRANT: "210"
+  GRANT_REVOKED: "200"
+  OPERATOR_BLOCKED: "210"
+  OPERATOR_NOT_ALLOWED: "210"
+  PRICE_OVER_THRESHOLD: "210"
+  PAYMENT_UNAVAILABLE: "210"
+  LOCATION_NOT_REFERENCED: "603"
+  OTHER: "106"
+fallback:
+  policy_timeout: "021"      # RH-HUBJECT-AUTH-004: answer NotAuthorized with 021 rather than exceed 10 s
+  policy_failed: "021"
+  malformed_request: "022"
